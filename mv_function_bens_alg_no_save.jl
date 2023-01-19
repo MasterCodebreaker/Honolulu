@@ -214,7 +214,7 @@ function piercing_arrays(v_0, v_1, matrix, data, EPSILON,number_of_points, data_
     number_of_n = number_of_points ÷ 10
 
     if number_of_n < 10
-        number_of_n = 10
+        number_of_n = 15
     end
 
     #number_of_n  = 8
@@ -568,6 +568,7 @@ function mv(; double_penetration::Bool = false,
     tripple::Bool = false,
     start_points::Bool = false,
     points::Array = [0,0,0,0],
+    what::String="ab",
     input_file::String="./cool_big_data.csv",
     anti_podes::String="./anti_podes",
     output_file::String="./point_color",
@@ -603,7 +604,9 @@ function mv(; double_penetration::Bool = false,
 
     if start_points
         if tripple
+            
             v_0,v_1,u_0,u_1,w_0,w_1 = points[1], points[2], points[3], points[4] , points[5], points[6]
+            
         else
             v_0,v_1,u_0,u_1 = points[1], points[2], points[3], points[4]
             w_0, w_1 = 0,0
@@ -622,7 +625,7 @@ function mv(; double_penetration::Bool = false,
     w_0 = w_0,
     w_1 = w_1 
     )
-    CSV.write(anti_podes * ".csv", df)
+    #CSV.write(anti_podes * ".csv", df)
 
     # Do this twice
     if naive_penetration
@@ -632,7 +635,13 @@ function mv(; double_penetration::Bool = false,
         end_0 = [0.0,0.0,1.0-EPSILON]
         end_1 = [0.0,0.0,-1.0-EPSILON]
     else
-        start_0, start_1, end_0, end_1 = piercing_arrays(v_0, v_1, matrix, data, EPSILON,number_of_points,data_dim)
+        if what == "cd"
+            start_0, start_1, end_0, end_1 = piercing_arrays(u_0, u_1, matrix, data, EPSILON,number_of_points,data_dim)
+        elseif what == "ef"
+            start_0, start_1, end_0, end_1 = piercing_arrays(w_0,w_1, matrix, data, EPSILON,number_of_points,data_dim)
+        else
+            start_0, start_1, end_0, end_1 = piercing_arrays(v_0, v_1, matrix, data, EPSILON,number_of_points,data_dim)
+        end
     end
     #start_0, start_1, end_0, end_1 = piercing_arrays(v_0, v_1, matrix, data, EPSILON,number_of_points,data_dim)
     simp_dic, u_drop, v_drop, len_simp_1_dic  = get_simplices(collapsed, data, EPSILON,dist, start_0, start_1, end_0, end_1)
@@ -652,7 +661,8 @@ function mv(; double_penetration::Bool = false,
         z=z,
         c=c
     )
-    CSV.write(output_file * ".csv", df)
+    ab_coord = c
+    #CSV.write(output_file * ".csv", df)
 
 
     df = DataFrame(
@@ -661,11 +671,11 @@ function mv(; double_penetration::Bool = false,
     z=start_1,
     c=end_1
     )
-    CSV.write(penetrating_vectors * ".csv", df)
+    #CSV.write(penetrating_vectors * ".csv", df)
     #println("First penetration done.")
 
     if double_penetration
-        println("Starting second penetration")
+        #println("Starting second penetration")
         #start_0, start_1, end_0, end_1 = piercing_arrays(u_0, u_1, matrix, data, EPSILON,number_of_points,data_dim)
         if naive_penetration
             start_0 = [0.0,1.0+EPSILON,0.0]
@@ -692,19 +702,19 @@ function mv(; double_penetration::Bool = false,
             z=z,
             c=c
         )
-        CSV.write(output_file * "double" * ".csv", df)
+        #CSV.write(output_file * "double" * ".csv", df)
     
-    
+        cd_coord = c
         df = DataFrame(
         x=start_0,
         y=end_0,
         z=start_1,
         c=end_1
         )
-        CSV.write(penetrating_vectors * "double" * ".csv", df)
+        #CSV.write(penetrating_vectors * "double" * ".csv", df)
 
         if tripple
-            println("Starting third penetration")
+            #println("Starting third penetration")
             #start_0, start_1, end_0, end_1 = piercing_arrays(u_0, u_1, matrix, data, EPSILON,number_of_points,data_dim)
             if naive_penetration
                 start_0 = [0.0,1.0+EPSILON,0.0]
@@ -731,7 +741,8 @@ function mv(; double_penetration::Bool = false,
                 z=z,
                 c=c
             )
-            CSV.write(output_file * "tripple" * ".csv", df)
+            ef_coord = c
+            #CSV.write(output_file * "tripple" * ".csv", df)
         
         
             df = DataFrame(
@@ -740,13 +751,16 @@ function mv(; double_penetration::Bool = false,
             z=start_1,
             c=end_1
             )
-            CSV.write(penetrating_vectors * "tripple" * ".csv", df)
+            #CSV.write(penetrating_vectors * "tripple" * ".csv", df)
+            
+            return ab_coord, cd_coord, ef_coord 
+        else
+            return ab_coord, cd_coord
         end
+    
 
     end
 
-    
-    println("All penetration done.")
-    #return v_0,v_1,u_0,u_1, tripple
+    return ab_coord
 
 end
